@@ -88,7 +88,7 @@ function FormulaireAjoutProduit({ visible, shopId, onFermer, onCree }) {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) return;
     const resultat = await ImagePicker.launchImageLibraryAsync({ quality: 0.8, allowsEditing: true });
-    if (!resultat.canceled) setPhoto(resultat.assets[0].uri);
+    if (!resultat.canceled) setPhoto(resultat.assets[0]);
   }
 
   async function soumettre() {
@@ -125,7 +125,7 @@ function FormulaireAjoutProduit({ visible, shopId, onFermer, onCree }) {
 
           <TouchableOpacity style={styles.zonePhoto} onPress={choisirPhoto}>
             {photo ? (
-              <Image source={{ uri: photo }} style={{ width: '100%', height: '100%', borderRadius: 12 }} />
+              <Image source={{ uri: photo.uri }} style={{ width: '100%', height: '100%', borderRadius: 12 }} />
             ) : (
               <Text style={{ color: COLORS.gris }}>📷  Ajouter une photo</Text>
             )}
