@@ -34,7 +34,7 @@ export default function ProductGalleryScreen({ route }) {
 
     setEnvoiEnCours(true);
     try {
-      await ApiClient.uploadImage(\/products/${productId}/images`, resultat.assets[0]);`
+      await ApiClient.uploadImage(\/products/${productId}/images`, resultat.assets[0]);
       await charger();
     } catch (e) {
       Alert.alert('Erreur', e instanceof ApiException ? e.message : 'Impossible d\'envoyer la photo.');
