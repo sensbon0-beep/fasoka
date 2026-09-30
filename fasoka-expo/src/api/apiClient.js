@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from './config';
 
@@ -56,25 +57,27 @@ export const ApiClient = {
     return handle(response);
   },
 
-  /**
-   * Envoie une image choisie via expo-image-picker (uri locale) en multipart/form-data.
-   */
-  async uploadImage(path, localUri) {
+  async uploadImage(path, asset) {
     const token = await getToken();
     const formData = new FormData();
-    const nomFichier = localUri.split('/').pop();
-    const extension = nomFichier.split('.').pop();
-    formData.append('image', {
-      uri: localUri,
-      name: nomFichier,
-      type: `image/${extension === 'jpg' ? 'jpeg' : extension}`,
-    });
+
+    if (Platform.OS === 'web') {
+      const fichier = asset.file || (await (await fetch(asset.uri)).blob());
+      formData.append('image', fichier, asset.fileName || 'photo.jpg');
+    } else {
+      const nomFichier = asset.uri.split('/').pop();
+      const extension = nomFichier.split('.').pop();
+      formData.append('image', {
+        uri: asset.uri,
+        name: nomFichier,
+        type: `image/${extension === 'jpg' ? 'jpeg' : extension}`,
+      });
+    }
 
     const response = await fetch(`${API_BASE_URL}${path}`, {
       method: 'POST',
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        // Ne PAS fixer Content-Type ici : fetch le génère automatiquement avec la bonne boundary multipart.
       },
       body: formData,
     });
