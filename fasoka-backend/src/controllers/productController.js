@@ -59,9 +59,11 @@ async function feed(req, res, next) {
   try {
     const { recherche, categorie, ville } = req.query;
     let query = `
-      SELECT p.*, s.nom_boutique, s.ville, s.badge_verifie
+      SELECT p.*, s.nom_boutique, s.ville, s.badge_verifie,
+             COALESCE(json_agg(pi.image_url) FILTER (WHERE pi.image_url IS NOT NULL), '[]') AS images
       FROM products p
       JOIN shops s ON s.id = p.shop_id
+      LEFT JOIN product_images pi ON pi.product_id = p.id
       WHERE p.actif = TRUE`;
     const params = [];
 
@@ -77,7 +79,7 @@ async function feed(req, res, next) {
       params.push(ville);
       query += ` AND s.ville = $${params.length}`;
     }
-    query += ` ORDER BY p.mis_en_avant DESC, p.created_at DESC LIMIT 50`;
+    query += ` GROUP BY p.id, s.id ORDER BY p.mis_en_avant DESC, p.created_at DESC LIMIT 50`;
 
     const result = await db.query(query, params);
     res.json(result.rows);
