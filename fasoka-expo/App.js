@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
@@ -7,6 +7,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { SpaceProvider, useSpace } from './src/context/SpaceContext';
 import { CartProvider } from './src/context/CartContext';
+import { ApiClient } from './src/api/apiClient';
 
 import LoginScreen from './src/screens/auth/LoginScreen';
 import SignupScreen from './src/screens/auth/SignupScreen';
@@ -26,12 +27,22 @@ function EcranAuth() {
   );
 }
 
-// Racine de navigation : bascule entre connexion / espace client / création boutique / espace boutique.
-// C'est l'équivalent du SpaceProvider + navigation conditionnelle côté Flutter.
 function RacineApp() {
   const { user } = useAuth();
-  const { aUneBoutique } = useSpace();
-  const [espaceActif, setEspaceActif] = useState('client'); // 'client' | 'creation-boutique' | 'boutique'
+  const { aUneBoutique, setMaBoutique } = useSpace();
+  const [espaceActif, setEspaceActif] = useState('client');
+
+  useEffect(() => {
+    if (user && !aUneBoutique) {
+      ApiClient.get('/shops/mine')
+        .then((boutiques) => {
+          if (boutiques && boutiques.length > 0) {
+            setMaBoutique(boutiques[0]);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [user]);
 
   if (!user) return <EcranAuth />;
 
