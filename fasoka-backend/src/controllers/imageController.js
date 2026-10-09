@@ -6,7 +6,7 @@ const db = require('../config/database');
 function envoyerVersCloudinary(buffer, dossier) {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
-      { folder: dossier, transformation: [{ width: 1000, height: 1000, crop: 'limit', quality: 'auto' }] },
+      { folder: dossier, transformation: [{ width: 1000, height: 1000, crop: 'fill', gravity: 'auto', quality: 'auto' }] },
       (err, result) => {
         if (err) reject(err);
         else resolve(result);
