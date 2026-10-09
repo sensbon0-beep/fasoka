@@ -1,18 +1,37 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, FlatList, Image, TouchableOpacity,
-  ActivityIndicator, StyleSheet, RefreshControl,
+  ActivityIndicator, StyleSheet, useWindowDimensions,
 } from 'react-native';
 import { COLORS } from '../../theme/colors';
 import { ApiClient } from '../../api/apiClient';
 import { useCart } from '../../context/CartContext';
 
+const LARGEUR_MAX = 1200; // largeur maximale du contenu sur grand écran
+const ECART = 10; // espace entre les cartes
+const MARGE = 12; // marge à gauche et à droite
+
+// Nombre de colonnes selon la largeur disponible : 2 sur téléphone, jusqu'à 5 sur grand écran
+function nombreColonnes(largeur) {
+  if (largeur >= 1100) return 5;
+  if (largeur >= 800) return 4;
+  if (largeur >= 560) return 3;
+  return 2;
+}
+
 export default function ClientHomeScreen() {
   const { ajouter } = useCart();
+  const { width } = useWindowDimensions();
   const [produits, setProduits] = useState([]);
   const [recherche, setRecherche] = useState('');
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState(null);
+  const [dernierAjout, setDernierAjout] = useState(null);
+
+  const largeurContenu = Math.min(width, LARGEUR_MAX);
+  const colonnes = nombreColonnes(largeurContenu);
+  // Largeur fixe calculée pour chaque carte : une carte seule ne s'étire plus sur toute la ligne
+  const largeurCarte = (largeurContenu - MARGE * 2 - ECART * (colonnes - 1)) / colonnes;
 
   const charger = useCallback(async (texte) => {
     setChargement(true);
@@ -29,65 +48,137 @@ export default function ClientHomeScreen() {
 
   useEffect(() => { charger(); }, [charger]);
 
-  return (
-    <View style={{ flex: 1, backgroundColor: COLORS.creme }}>
-      <TextInput
-        style={styles.recherche}
-        placeholder="Rechercher un produit..."
-        value={recherche}
-        onChangeText={setRecherche}
-        onSubmitEditing={() => charger(recherche)}
-      />
+  function ajouterAuPanier(produit) {
+    ajouter(produit);
+    setDernierAjout(produit.id);
+    setTimeout(() => setDernierAjout(null), 1200);
+  }
 
-      {chargement ? (
-        <ActivityIndicator style={{ marginTop: 40 }} color={COLORS.or} />
-      ) : erreur ? (
-        <Text style={styles.message}>{erreur}</Text>
-      ) : produits.length === 0 ? (
-        <Text style={styles.message}>Aucun produit trouvé.</Text>
-      ) : (
-        <FlatList
-          data={produits}
-          keyExtractor={(item) => item.id}
-          numColumns={2}
-          contentContainerStyle={{ padding: 8 }}
-          refreshControl={<RefreshControl refreshing={false} onRefresh={() => charger(recherche)} />}
-          renderItem={({ item }) => (
-            <View style={styles.carte}>
-              <View style={styles.imageZone}>
-                {item.images && item.images.length > 0 ? (
-                  <Image source={{ uri: item.images[0] }} style={styles.image} />
-                ) : (
-                  <Text style={{ color: COLORS.gris }}>📦</Text>
-                )}
-              </View>
-              <View style={{ padding: 8 }}>
-                <Text numberOfLines={1} style={styles.nomProduit}>{item.nom}</Text>
-                {item.nom_boutique && <Text numberOfLines={1} style={styles.nomBoutique}>{item.nom_boutique}</Text>}
-                <View style={styles.ligneBas}>
-                  <Text style={styles.prix}>{Number(item.prix).toLocaleString('fr-FR')} F</Text>
-                  <TouchableOpacity style={styles.boutonAjout} onPress={() => ajouter(item)}>
-                    <Text style={{ color: COLORS.noir, fontWeight: '700' }}>+</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
+  function carteProduit({ item }) {
+    const stock = Number(item.stock_quantite) || 0;
+    const rupture = stock <= 0;
+    const photo = item.images && item.images.length > 0 ? item.images[0] : null;
+
+    return (
+      <View style={[styles.carte, { width: largeurCarte }]}>
+        <View style={styles.imageZone}>
+          {photo ? (
+            <Image source={{ uri: photo }} style={styles.image} resizeMode="cover" />
+          ) : (
+            <Text style={styles.imageVide}>📦</Text>
           )}
+          <TouchableOpacity
+            style={[styles.boutonAjout, rupture && styles.boutonDesactive]}
+            disabled={rupture}
+            onPress={() => ajouterAuPanier(item)}
+          >
+            <Text style={styles.boutonAjoutTexte}>{dernierAjout === item.id ? '✓' : '+'}</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.infos}>
+          <Text numberOfLines={2} style={styles.nom}>{item.nom}</Text>
+          <Text style={styles.prix}>{Number(item.prix).toLocaleString('fr-FR')} F CFA</Text>
+          <Text numberOfLines={1} style={styles.boutique}>
+            {item.badge_verifie ? '✔ ' : ''}{item.nom_boutique}
+          </Text>
+          {item.ville ? <Text numberOfLines={1} style={styles.ville}>📍 {item.ville}</Text> : null}
+          {rupture ? (
+            <Text style={styles.rupture}>Rupture de stock</Text>
+          ) : stock <= 5 ? (
+            <Text style={styles.stockFaible}>Plus que {stock} en stock</Text>
+          ) : null}
+        </View>
+      </View>
+    );
+  }
+
+  const entete = (
+    <View style={{ paddingHorizontal: MARGE, paddingTop: 12 }}>
+      <View style={styles.rechercheLigne}>
+        <TextInput
+          style={styles.rechercheInput}
+          placeholder="Rechercher un produit..."
+          placeholderTextColor={COLORS.gris}
+          value={recherche}
+          onChangeText={setRecherche}
+          onSubmitEditing={() => charger(recherche)}
+          returnKeyType="search"
         />
-      )}
+        <TouchableOpacity style={styles.rechercheBouton} onPress={() => charger(recherche)}>
+          <Text style={styles.rechercheBoutonTexte}>Rechercher</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.titreLigne}>
+        <Text style={styles.titreSection}>Produits à découvrir</Text>
+        {!chargement && !erreur ? (
+          <Text style={styles.compteur}>{produits.length} produit{produits.length > 1 ? 's' : ''}</Text>
+        ) : null}
+      </View>
+    </View>
+  );
+
+  const vide = chargement ? (
+    <ActivityIndicator style={{ marginTop: 40 }} color={COLORS.or} />
+  ) : (
+    <Text style={styles.message}>{erreur || 'Aucun produit trouvé.'}</Text>
+  );
+
+  return (
+    <View style={styles.page}>
+      <View style={{ flex: 1, width: largeurContenu }}>
+        <FlatList
+          key={colonnes}
+          data={chargement ? [] : produits}
+          keyExtractor={(item) => item.id}
+          numColumns={colonnes}
+          columnWrapperStyle={{ gap: ECART, paddingHorizontal: MARGE }}
+          ListHeaderComponent={entete}
+          ListEmptyComponent={vide}
+          renderItem={carteProduit}
+          refreshing={false}
+          onRefresh={() => charger(recherche)}
+          contentContainerStyle={{ paddingBottom: 24 }}
+        />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  recherche: { backgroundColor: 'white', margin: 12, padding: 12, borderRadius: 12, fontSize: 14 },
-  message: { textAlign: 'center', color: COLORS.gris, marginTop: 40 },
-  carte: { flex: 1, backgroundColor: 'white', borderRadius: 14, margin: 6, overflow: 'hidden' },
-  imageZone: { height: 90, backgroundColor: COLORS.creme, alignItems: 'center', justifyContent: 'center' },
+  page: { flex: 1, backgroundColor: COLORS.creme, alignItems: 'center' },
+  rechercheLigne: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: 'white',
+    borderRadius: 24, borderWidth: 2, borderColor: COLORS.or, paddingLeft: 14, overflow: 'hidden',
+  },
+  rechercheInput: { flex: 1, paddingVertical: 10, fontSize: 14 },
+  rechercheBouton: { backgroundColor: COLORS.or, paddingHorizontal: 18, paddingVertical: 12 },
+  rechercheBoutonTexte: { color: COLORS.noir, fontWeight: '700', fontSize: 13 },
+  titreLigne: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline',
+    marginTop: 18, marginBottom: 10,
+  },
+  titreSection: { fontSize: 17, fontWeight: '800', color: COLORS.noir },
+  compteur: { fontSize: 12, color: COLORS.gris },
+  message: { textAlign: 'center', color: COLORS.gris, marginTop: 40, paddingHorizontal: 20 },
+  carte: { backgroundColor: 'white', borderRadius: 12, overflow: 'hidden', marginBottom: ECART },
+  imageZone: {
+    width: '100%', aspectRatio: 1, backgroundColor: COLORS.creme,
+    alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+  },
   image: { width: '100%', height: '100%' },
-  nomProduit: { fontWeight: '600', fontSize: 13 },
-  nomBoutique: { fontSize: 11, color: COLORS.gris, marginBottom: 6 },
-  ligneBas: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  prix: { fontWeight: '700', color: COLORS.rouge, fontSize: 13 },
-  boutonAjout: { backgroundColor: COLORS.or, borderRadius: 13, width: 26, height: 26, alignItems: 'center', justifyContent: 'center' },
+  imageVide: { fontSize: 36, opacity: 0.4 },
+  boutonAjout: {
+    position: 'absolute', right: 8, bottom: 8, width: 32, height: 32, borderRadius: 16,
+    backgroundColor: COLORS.or, alignItems: 'center', justifyContent: 'center', elevation: 3,
+  },
+  boutonDesactive: { backgroundColor: '#dddddd' },
+  boutonAjoutTexte: { color: COLORS.noir, fontSize: 18, fontWeight: '700', lineHeight: 20 },
+  infos: { padding: 10 },
+  nom: { fontSize: 13, color: COLORS.noir, minHeight: 36, lineHeight: 18 },
+  prix: { fontSize: 16, fontWeight: '800', color: COLORS.rouge, marginTop: 4 },
+  boutique: { fontSize: 11, color: COLORS.gris, marginTop: 6 },
+  ville: { fontSize: 11, color: COLORS.gris, marginTop: 2 },
+  stockFaible: { fontSize: 11, color: COLORS.rouge, marginTop: 4, fontWeight: '600' },
+  rupture: { fontSize: 11, color: COLORS.gris, marginTop: 4, fontWeight: '600' },
 });
