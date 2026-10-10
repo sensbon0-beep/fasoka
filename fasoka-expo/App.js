@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
@@ -27,11 +28,13 @@ function EcranAuth() {
   );
 }
 
+// Racine de navigation : bascule entre connexion / espace client / création boutique / espace boutique.
 function RacineApp() {
-  const { user } = useAuth();
+  const { user, chargementSession } = useAuth();
   const { aUneBoutique, setMaBoutique } = useSpace();
-  const [espaceActif, setEspaceActif] = useState('client');
+  const [espaceActif, setEspaceActif] = useState('client'); // 'client' | 'creation-boutique' | 'boutique'
 
+  // Après connexion (ou restauration de session), on retrouve la boutique existante de l'utilisateur
   useEffect(() => {
     if (user && !aUneBoutique) {
       ApiClient.get('/shops/mine')
@@ -43,6 +46,16 @@ function RacineApp() {
         .catch(() => {});
     }
   }, [user]);
+
+  // Pendant qu'on cherche une session enregistrée, on affiche un écran d'attente
+  // (sinon l'écran de connexion clignoterait à chaque actualisation de la page)
+  if (chargementSession) {
+    return (
+      <View style={{ flex: 1, backgroundColor: COLORS.noir, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="large" color={COLORS.or} />
+      </View>
+    );
+  }
 
   if (!user) return <EcranAuth />;
 
