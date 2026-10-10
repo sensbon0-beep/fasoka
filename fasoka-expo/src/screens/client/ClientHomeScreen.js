@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, TextInput, FlatList, Image, TouchableOpacity,
-  ActivityIndicator, StyleSheet, useWindowDimensions,
+  ActivityIndicator, StyleSheet, useWindowDimensions, Platform, BackHandler,
 } from 'react-native';
 import { COLORS } from '../../theme/colors';
 import { ApiClient } from '../../api/apiClient';
@@ -19,14 +19,16 @@ function nombreColonnes(largeur) {
   return 2;
 }
 
-export default function ClientHomeScreen() {
+export default function ClientHomeScreen({ navigation }) {
   const { ajouter } = useCart();
   const { width } = useWindowDimensions();
   const [produits, setProduits] = useState([]);
-  const [recherche, setRecherche] = useState('');
+  const [recherche, setRecherche] = useState(''); // texte tapé dans la barre de recherche
+  const [termeActif, setTermeActif] = useState(''); // recherche actuellement affichée ('' = tous les produits)
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState(null);
   const [dernierAjout, setDernierAjout] = useState(null);
+  const entreeHistorique = useRef(false); // vrai si une entrée a été ajoutée à l'historique du navigateur
 
   const largeurContenu = Math.min(width, LARGEUR_MAX);
   const colonnes = nombreColonnes(largeurContenu);
@@ -47,6 +49,71 @@ export default function ClientHomeScreen() {
   }, []);
 
   useEffect(() => { charger(); }, [charger]);
+
+  // Revient à la liste complète des produits (aucune recherche)
+  const afficherTout = useCallback(() => {
+    entreeHistorique.current = false;
+    setRecherche('');
+    setTermeActif('');
+    charger();
+  }, [charger]);
+
+  // Lance une recherche. Sur le web, on ajoute UNE entrée dans l'historique du navigateur :
+  // ainsi le bouton Retour ramène à la liste complète au lieu de quitter le site.
+  function lancerRecherche() {
+    const texte = recherche.trim();
+    if (!texte) {
+      quitterRecherche();
+      return;
+    }
+    if (Platform.OS === 'web' && !entreeHistorique.current) {
+      window.history.pushState({ fasokaRecherche: true }, '');
+      entreeHistorique.current = true;
+    }
+    setTermeActif(texte);
+    charger(texte);
+  }
+
+  // Sort de la recherche. Sur le web, on passe par le retour arrière du navigateur
+  // (qui déclenche 'popstate', géré plus bas) pour garder un historique propre.
+  function quitterRecherche() {
+    if (Platform.OS === 'web' && entreeHistorique.current) {
+      window.history.back();
+    } else {
+      afficherTout();
+    }
+  }
+
+  // Web : le bouton Retour du navigateur ramène à la liste complète
+  useEffect(() => {
+    if (Platform.OS !== 'web') return undefined;
+    const surRetour = () => {
+      if (entreeHistorique.current) afficherTout();
+    };
+    window.addEventListener('popstate', surRetour);
+    return () => window.removeEventListener('popstate', surRetour);
+  }, [afficherTout]);
+
+  // Android : le bouton Retour du téléphone sort de la recherche au lieu de fermer l'app
+  useEffect(() => {
+    if (Platform.OS === 'web') return undefined;
+    const abonnement = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (termeActif && navigation.isFocused()) {
+        afficherTout();
+        return true;
+      }
+      return false;
+    });
+    return () => abonnement.remove();
+  }, [termeActif, afficherTout, navigation]);
+
+  // Un appui sur l'onglet "Accueil" (déjà affiché) ramène à la liste complète
+  useEffect(() => {
+    const desabonner = navigation.addListener('tabPress', () => {
+      if (termeActif && navigation.isFocused()) quitterRecherche();
+    });
+    return desabonner;
+  }, [navigation, termeActif]);
 
   function ajouterAuPanier(produit) {
     ajouter(produit);
@@ -102,15 +169,25 @@ export default function ClientHomeScreen() {
           placeholderTextColor={COLORS.gris}
           value={recherche}
           onChangeText={setRecherche}
-          onSubmitEditing={() => charger(recherche)}
+          onSubmitEditing={lancerRecherche}
           returnKeyType="search"
         />
-        <TouchableOpacity style={styles.rechercheBouton} onPress={() => charger(recherche)}>
+        <TouchableOpacity style={styles.rechercheBouton} onPress={lancerRecherche}>
           <Text style={styles.rechercheBoutonTexte}>Rechercher</Text>
         </TouchableOpacity>
       </View>
+
+      {termeActif ? (
+        <View style={styles.barreResultats}>
+          <Text style={styles.resultatsTexte} numberOfLines={1}>Résultats pour « {termeActif} »</Text>
+          <TouchableOpacity onPress={quitterRecherche}>
+            <Text style={styles.resultatsLien}>✕ Voir tous les produits</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+
       <View style={styles.titreLigne}>
-        <Text style={styles.titreSection}>Produits à découvrir</Text>
+        <Text style={styles.titreSection}>{termeActif ? 'Résultats' : 'Produits à découvrir'}</Text>
         {!chargement && !erreur ? (
           <Text style={styles.compteur}>{produits.length} produit{produits.length > 1 ? 's' : ''}</Text>
         ) : null}
@@ -118,10 +195,14 @@ export default function ClientHomeScreen() {
     </View>
   );
 
+  const messageVide = termeActif
+    ? 'Aucun résultat pour « ' + termeActif + ' ».'
+    : 'Aucun produit trouvé.';
+
   const vide = chargement ? (
     <ActivityIndicator style={{ marginTop: 40 }} color={COLORS.or} />
   ) : (
-    <Text style={styles.message}>{erreur || 'Aucun produit trouvé.'}</Text>
+    <Text style={styles.message}>{erreur || messageVide}</Text>
   );
 
   return (
@@ -137,7 +218,7 @@ export default function ClientHomeScreen() {
           ListEmptyComponent={vide}
           renderItem={carteProduit}
           refreshing={false}
-          onRefresh={() => charger(recherche)}
+          onRefresh={() => charger(termeActif)}
           contentContainerStyle={{ paddingBottom: 24 }}
         />
       </View>
@@ -154,6 +235,13 @@ const styles = StyleSheet.create({
   rechercheInput: { flex: 1, paddingVertical: 10, fontSize: 14 },
   rechercheBouton: { backgroundColor: COLORS.or, paddingHorizontal: 18, paddingVertical: 12 },
   rechercheBoutonTexte: { color: COLORS.noir, fontWeight: '700', fontSize: 13 },
+  barreResultats: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginTop: 12, backgroundColor: '#FFF6D6', borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 8, gap: 8,
+  },
+  resultatsTexte: { flex: 1, fontSize: 12, color: COLORS.noir },
+  resultatsLien: { fontSize: 12, fontWeight: '700', color: COLORS.rouge },
   titreLigne: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline',
     marginTop: 18, marginBottom: 10,
