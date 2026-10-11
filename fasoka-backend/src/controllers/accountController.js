@@ -2,7 +2,7 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const streamifier = require('streamifier');
 const db = require('../config/database');
-const cloudinary = require('../config/cloudinary');
+const { envoyerEmail, emailConfigure } = require('../services/emailService');
 const { envoyerEmail } = require('../services/emailService');
 
 const DUREE_CODE_MINUTES = 10;
@@ -209,12 +209,12 @@ async function demanderCode(req, res, next) {
       return res.status(400).json({ error: 'Type de modification invalide.' });
     }
 
-    const compte = await db.query(`SELECT id, prenom, email FROM users WHERE id = $1`, [req.userId]);
-    const utilisateur = compte.rows[0];
-    if (!utilisateur) return res.status(404).json({ error: 'Compte introuvable.' });
-    if (!utilisateur.email) {
-      return res.status(400).json({
-        error: "Aucun email n'est associé à ce compte : impossible d'envoyer un code de confirmation.",
+        // Tant qu'aucun service d'envoi d'emails n'est configuré, on refuse proprement
+    // (au lieu de faire semblant d'envoyer un code). Pour tester sans envoi réel, ajouter la
+    // variable EMAIL_SIMULATION=true : le code s'affiche alors dans les logs du serveur.
+    if (!emailConfigure() && process.env.EMAIL_SIMULATION !== 'true') {
+      return res.status(503).json({
+        error: "L'envoi des codes par email n'est pas encore activé. Cette fonction sera disponible prochainement.",
       });
     }
 
