@@ -5,6 +5,19 @@ import { API_BASE_URL } from '../api/config';
 
 const AuthContext = createContext(null);
 
+// On ne garde (en mémoire et dans le navigateur) que les informations utiles à l'affichage
+function nettoyerUtilisateur(u) {
+  return {
+    id: u.id,
+    nom: u.nom,
+    prenom: u.prenom,
+    email: u.email || null,
+    telephone: u.telephone || null,
+    compte_verifie: u.compte_verifie,
+    photo_profil_url: u.photo_profil_url || null,
+  };
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [chargementSession, setChargementSession] = useState(true);
@@ -33,7 +46,7 @@ export function AuthProvider({ children }) {
           // Pas de réseau pour le moment : on garde la session et on réessaiera plus tard
         }
 
-        if (actif) setUser(JSON.parse(userJson));
+        if (actif) setUser(nettoyerUtilisateur(JSON.parse(userJson)));
       } catch (e) {
         // Lecture impossible : on reste simplement déconnecté
       } finally {
@@ -46,9 +59,17 @@ export function AuthProvider({ children }) {
   }, []);
 
   const sauvegarderSession = useCallback(async (data) => {
+    const propre = nettoyerUtilisateur(data.user);
     await AsyncStorage.setItem('auth_token', data.token);
-    await AsyncStorage.setItem('auth_user', JSON.stringify(data.user));
-    setUser(data.user);
+    await AsyncStorage.setItem('auth_user', JSON.stringify(propre));
+    setUser(propre);
+  }, []);
+
+  // Met à jour les informations du compte affichées (après modification du profil, de la photo, de l'email...)
+  const mettreAJourUtilisateur = useCallback(async (nouvelUtilisateur) => {
+    const propre = nettoyerUtilisateur(nouvelUtilisateur);
+    await AsyncStorage.setItem('auth_user', JSON.stringify(propre));
+    setUser(propre);
   }, []);
 
   const inscription = useCallback(async ({ nom, prenom, email, telephone, motDePasse }) => {
@@ -72,7 +93,9 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, chargementSession, inscription, connexion, deconnexion }}>
+    <AuthContext.Provider
+      value={{ user, chargementSession, inscription, connexion, deconnexion, mettreAJourUtilisateur }}
+    >
       {children}
     </AuthContext.Provider>
   );
