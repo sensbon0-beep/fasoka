@@ -2,9 +2,8 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const streamifier = require('streamifier');
 const db = require('../config/database');
+const cloudinary = require('../config/cloudinary');
 const { envoyerEmail, emailConfigure } = require('../services/emailService');
-const { envoyerEmail } = require('../services/emailService');
-
 const DUREE_CODE_MINUTES = 10;
 const MAX_TENTATIVES = 5;
 const DELAI_RENVOI_SECONDES = 60;
