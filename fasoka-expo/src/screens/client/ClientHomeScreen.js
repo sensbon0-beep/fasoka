@@ -3,6 +3,7 @@ import {
   View, Text, TextInput, FlatList, Image, TouchableOpacity,
   ActivityIndicator, StyleSheet, useWindowDimensions, Platform, BackHandler,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../theme/colors';
 import { ApiClient } from '../../api/apiClient';
 import { useCart } from '../../context/CartContext';
@@ -132,24 +133,32 @@ export default function ClientHomeScreen({ navigation }) {
           {photo ? (
             <Image source={{ uri: photo }} style={styles.image} resizeMode="cover" />
           ) : (
-            <Text style={styles.imageVide}>📦</Text>
+            <Ionicons name="cube-outline" size={40} color={COLORS.gris} />
           )}
           <TouchableOpacity
             style={[styles.boutonAjout, rupture && styles.boutonDesactive]}
             disabled={rupture}
             onPress={() => ajouterAuPanier(item)}
           >
-            <Text style={styles.boutonAjoutTexte}>{dernierAjout === item.id ? '✓' : '+'}</Text>
+            <Ionicons name={dernierAjout === item.id ? 'checkmark' : 'add'} size={20} color={COLORS.noir} />
           </TouchableOpacity>
         </View>
 
         <View style={styles.infos}>
           <Text numberOfLines={2} style={styles.nom}>{item.nom}</Text>
           <Text style={styles.prix}>{Number(item.prix).toLocaleString('fr-FR')} F CFA</Text>
-          <Text numberOfLines={1} style={styles.boutique}>
-            {item.badge_verifie ? '✔ ' : ''}{item.nom_boutique}
-          </Text>
-          {item.ville ? <Text numberOfLines={1} style={styles.ville}>📍 {item.ville}</Text> : null}
+          <View style={styles.ligneBoutique}>
+            {item.badge_verifie ? (
+              <Ionicons name="checkmark-circle" size={13} color="#2563EB" style={{ marginRight: 3 }} />
+            ) : null}
+            <Text numberOfLines={1} style={styles.boutique}>{item.nom_boutique}</Text>
+          </View>
+          {item.ville ? (
+            <View style={styles.ligneVille}>
+              <Ionicons name="location-outline" size={12} color={COLORS.gris} />
+              <Text numberOfLines={1} style={styles.ville}>{item.ville}</Text>
+            </View>
+          ) : null}
           {rupture ? (
             <Text style={styles.rupture}>Rupture de stock</Text>
           ) : stock <= 5 ? (
@@ -180,8 +189,9 @@ export default function ClientHomeScreen({ navigation }) {
       {termeActif ? (
         <View style={styles.barreResultats}>
           <Text style={styles.resultatsTexte} numberOfLines={1}>Résultats pour « {termeActif} »</Text>
-          <TouchableOpacity onPress={quitterRecherche}>
-            <Text style={styles.resultatsLien}>✕ Voir tous les produits</Text>
+          <TouchableOpacity onPress={quitterRecherche} style={styles.resultatsLienLigne}>
+            <Ionicons name="close-circle" size={15} color={COLORS.rouge} />
+            <Text style={styles.resultatsLien}>Voir tous les produits</Text>
           </TouchableOpacity>
         </View>
       ) : null}
@@ -241,7 +251,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 8, gap: 8,
   },
   resultatsTexte: { flex: 1, fontSize: 12, color: COLORS.noir },
-  resultatsLien: { fontSize: 12, fontWeight: '700', color: COLORS.rouge },
+  resultatsLienLigne: { flexDirection: 'row', alignItems: 'center' },
+  resultatsLien: { fontSize: 12, fontWeight: '700', color: COLORS.rouge, marginLeft: 4 },
   titreLigne: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline',
     marginTop: 18, marginBottom: 10,
@@ -255,18 +266,18 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
   },
   image: { width: '100%', height: '100%' },
-  imageVide: { fontSize: 36, opacity: 0.4 },
   boutonAjout: {
     position: 'absolute', right: 8, bottom: 8, width: 32, height: 32, borderRadius: 16,
     backgroundColor: COLORS.or, alignItems: 'center', justifyContent: 'center', elevation: 3,
   },
   boutonDesactive: { backgroundColor: '#dddddd' },
-  boutonAjoutTexte: { color: COLORS.noir, fontSize: 18, fontWeight: '700', lineHeight: 20 },
   infos: { padding: 10 },
   nom: { fontSize: 13, color: COLORS.noir, minHeight: 36, lineHeight: 18 },
   prix: { fontSize: 16, fontWeight: '800', color: COLORS.rouge, marginTop: 4 },
-  boutique: { fontSize: 11, color: COLORS.gris, marginTop: 6 },
-  ville: { fontSize: 11, color: COLORS.gris, marginTop: 2 },
+  ligneBoutique: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
+  boutique: { fontSize: 11, color: COLORS.gris, flexShrink: 1 },
+  ligneVille: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
+  ville: { fontSize: 11, color: COLORS.gris, marginLeft: 3, flexShrink: 1 },
   stockFaible: { fontSize: 11, color: COLORS.rouge, marginTop: 4, fontWeight: '600' },
   rupture: { fontSize: 11, color: COLORS.gris, marginTop: 4, fontWeight: '600' },
 });
