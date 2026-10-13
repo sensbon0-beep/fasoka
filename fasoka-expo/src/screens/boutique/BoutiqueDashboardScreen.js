@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../theme/colors';
 import { ApiClient } from '../../api/apiClient';
 import { useSpace } from '../../context/SpaceContext';
@@ -49,7 +50,7 @@ export default function BoutiqueDashboardScreen() {
       </View>
       <View style={styles.ligne}>
         <Tuile label="Produits actifs" valeur={stats?.total_produits ?? 0} />
-        <Tuile label="Note moyenne" valeur={`${stats?.note_moyenne ?? '0.0'} ★`} />
+        <Tuile label="Note moyenne" valeur={<>{stats?.note_moyenne ?? '0.0'} <Ionicons name="star" size={16} color={COLORS.or} /></>} />
       </View>
 
       {maBoutique?.plan !== 'pro' && (
