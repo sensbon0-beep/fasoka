@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, ScrollView,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../theme/colors';
 import { useAuth } from '../../context/AuthContext';
 import { ApiClient, ApiException } from '../../api/apiClient';
@@ -45,7 +46,8 @@ export default function EditProfileScreen({ onRetour }) {
       keyboardShouldPersistTaps="handled"
     >
       <TouchableOpacity onPress={onRetour} style={styles.retour}>
-        <Text style={styles.retourTexte}>‹ Retour</Text>
+        <Ionicons name="chevron-back" size={18} color={COLORS.rouge} />
+        <Text style={styles.retourTexte}>Retour</Text>
       </TouchableOpacity>
       <Text style={styles.titre}>Modifier mon profil</Text>
 
@@ -74,7 +76,12 @@ export default function EditProfileScreen({ onRetour }) {
       </Text>
 
       {erreur ? <Text style={styles.erreur}>{erreur}</Text> : null}
-      {succes ? <Text style={styles.succes}>✓ Profil mis à jour</Text> : null}
+      {succes ? (
+        <View style={styles.ligneSucces}>
+          <Ionicons name="checkmark-circle" size={18} color="#16A34A" />
+          <Text style={styles.succes}>Profil mis à jour</Text>
+        </View>
+      ) : null}
 
       <TouchableOpacity style={styles.bouton} onPress={enregistrer} disabled={envoi}>
         {envoi ? <ActivityIndicator color={COLORS.noir} /> : <Text style={styles.boutonTexte}>Enregistrer</Text>}
@@ -85,7 +92,7 @@ export default function EditProfileScreen({ onRetour }) {
 
 const styles = StyleSheet.create({
   container: { padding: 20, width: '100%', maxWidth: 520, alignSelf: 'center' },
-  retour: { paddingVertical: 6, marginBottom: 6, alignSelf: 'flex-start' },
+  retour: { paddingVertical: 6, marginBottom: 6, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center' },
   retourTexte: { fontSize: 15, color: COLORS.rouge, fontWeight: '600' },
   titre: { fontSize: 20, fontWeight: '800', marginBottom: 16, color: COLORS.noir },
   label: { fontSize: 12, color: COLORS.gris, marginBottom: 4, marginTop: 10 },
@@ -93,7 +100,8 @@ const styles = StyleSheet.create({
   inputLectureSeule: { backgroundColor: '#ECEAE4' },
   aide: { fontSize: 12, color: COLORS.gris, marginTop: 8 },
   erreur: { color: COLORS.rouge, marginTop: 14 },
-  succes: { color: '#16A34A', marginTop: 14, fontWeight: '600' },
+  ligneSucces: { flexDirection: 'row', alignItems: 'center', marginTop: 14 },
+  succes: { color: '#16A34A', fontWeight: '600', marginLeft: 6 },
   bouton: { backgroundColor: COLORS.or, borderRadius: 12, padding: 14, alignItems: 'center', marginTop: 20 },
   boutonTexte: { color: COLORS.noir, fontWeight: '700', fontSize: 15 },
 });
