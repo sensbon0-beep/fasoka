@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../theme/colors';
 import { ApiClient } from '../../api/apiClient';
 import { useCart } from '../../context/CartContext';
+import { useAuth } from '../../context/AuthContext';
 
 const LARGEUR_MAX = 1200; // largeur maximale du contenu sur grand écran
 const ECART = 10; // espace entre les cartes
@@ -20,8 +21,23 @@ function nombreColonnes(largeur) {
   return 2;
 }
 
+// Prénom à afficher : celui du client connecté (à défaut, son nom). Un prénom saisi tout en majuscules
+// ou tout en minuscules est remis en forme (ex : « KOMI » devient « Komi », « jean-pierre » devient « Jean-Pierre »).
+function prenomAffichable(user) {
+  if (!user) return null;
+  const brut = String(user.prenom || user.nom || '').trim();
+  if (!brut) return null;
+  if (brut !== brut.toUpperCase() && brut !== brut.toLowerCase()) return brut;
+  return brut
+    .toLowerCase()
+    .split(/([\s'-]+)/)
+    .map((morceau) => morceau.charAt(0).toUpperCase() + morceau.slice(1))
+    .join('');
+}
+
 export default function ClientHomeScreen({ navigation }) {
   const { ajouter } = useCart();
+  const { user } = useAuth();
   const { width } = useWindowDimensions();
   const [produits, setProduits] = useState([]);
   const [recherche, setRecherche] = useState(''); // texte tapé dans la barre de recherche
@@ -169,8 +185,17 @@ export default function ClientHomeScreen({ navigation }) {
     );
   }
 
+  // Message de bienvenue : prénom du client connecté, ou message neutre si le profil n'est pas (encore) disponible
+  const prenom = prenomAffichable(user);
+  const messageBienvenue = prenom ? 'Bienvenue, ' + prenom + ' !' : 'Bienvenue sur FASOKA !';
+
   const entete = (
-    <View style={{ paddingHorizontal: MARGE, paddingTop: 12 }}>
+    <View style={{ paddingHorizontal: MARGE, paddingTop: 14 }}>
+      <View style={styles.bienvenue}>
+        <Text style={styles.bienvenueTitre} numberOfLines={2}>{messageBienvenue}</Text>
+        <Text style={styles.bienvenueSousTitre}>Découvrez les produits et boutiques près de chez vous.</Text>
+      </View>
+
       <View style={styles.rechercheLigne}>
         <TextInput
           style={styles.rechercheInput}
@@ -238,6 +263,9 @@ export default function ClientHomeScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: COLORS.creme, alignItems: 'center' },
+  bienvenue: { borderLeftWidth: 3, borderLeftColor: COLORS.or, paddingLeft: 10, marginBottom: 14 },
+  bienvenueTitre: { fontSize: 20, fontWeight: '800', color: COLORS.noir },
+  bienvenueSousTitre: { fontSize: 12.5, color: COLORS.gris, marginTop: 2, lineHeight: 17 },
   rechercheLigne: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: 'white',
     borderRadius: 24, borderWidth: 2, borderColor: COLORS.or, paddingLeft: 14, overflow: 'hidden',
