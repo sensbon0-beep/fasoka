@@ -4,6 +4,7 @@ import {
   ScrollView, Platform, BackHandler,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../theme/colors';
 import { useAuth } from '../../context/AuthContext';
 import { ApiClient, ApiException } from '../../api/apiClient';
@@ -57,11 +58,14 @@ function useRetourEnArriere(actif, surRetour) {
   }, [actif]);
 }
 
-function LigneMenu({ libelle, onPress, derniere }) {
+function LigneMenu({ libelle, icone, onPress, derniere }) {
   const contenu = (
     <View style={[styles.ligneListe, derniere && { borderBottomWidth: 0 }]}>
-      <Text style={styles.ligneTexte}>{libelle}</Text>
-      {onPress ? <Text style={styles.chevron}>›</Text> : null}
+      <View style={styles.ligneGauche}>
+        <Ionicons name={icone} size={20} color={COLORS.noir} />
+        <Text style={styles.ligneTexte}>{libelle}</Text>
+      </View>
+      {onPress ? <Ionicons name="chevron-forward" size={18} color={COLORS.gris} /> : null}
     </View>
   );
   return onPress ? <TouchableOpacity onPress={onPress}>{contenu}</TouchableOpacity> : contenu;
@@ -127,7 +131,7 @@ export default function ProfileScreen() {
           </View>
         )}
         <View style={styles.badgeCamera}>
-          {envoiPhoto ? <ActivityIndicator size="small" color={COLORS.noir} /> : <Text style={{ fontSize: 14 }}>📷</Text>}
+          {envoiPhoto ? <ActivityIndicator size="small" color={COLORS.noir} /> : <Ionicons name="camera" size={16} color={COLORS.noir} />}
         </View>
       </TouchableOpacity>
 
@@ -143,14 +147,15 @@ export default function ProfileScreen() {
       {user && user.telephone ? <Text style={styles.contact}>{user.telephone}</Text> : null}
 
       <TouchableOpacity style={styles.boutonModifier} onPress={() => setVue('modifier')}>
-        <Text style={styles.boutonModifierTexte}>✏️  Modifier mon profil</Text>
+        <Ionicons name="create-outline" size={16} color={COLORS.noir} />
+        <Text style={styles.boutonModifierTexte}>Modifier mon profil</Text>
       </TouchableOpacity>
 
       <View style={styles.liste}>
-        <LigneMenu libelle="Mes favoris" />
-        <LigneMenu libelle="Sécurité" onPress={() => setVue('securite')} />
-        <LigneMenu libelle="Notifications" />
-        <LigneMenu libelle="Aide" derniere />
+        <LigneMenu libelle="Mes favoris" icone="heart-outline" />
+        <LigneMenu libelle="Sécurité" icone="shield-checkmark-outline" onPress={() => setVue('securite')} />
+        <LigneMenu libelle="Notifications" icone="notifications-outline" />
+        <LigneMenu libelle="Aide" icone="help-circle-outline" derniere />
       </View>
 
       <TouchableOpacity onPress={deconnexion} style={{ marginTop: 20 }}>
@@ -177,15 +182,16 @@ const styles = StyleSheet.create({
   contact: { color: COLORS.gris, fontSize: 13, marginTop: 2 },
   boutonModifier: {
     marginTop: 16, marginBottom: 20, paddingVertical: 10, paddingHorizontal: 20,
+    flexDirection: 'row', alignItems: 'center',
     borderRadius: 20, borderWidth: 1.5, borderColor: COLORS.noir, backgroundColor: 'white',
   },
-  boutonModifierTexte: { fontSize: 13, fontWeight: '600', color: COLORS.noir },
+  boutonModifierTexte: { fontSize: 13, fontWeight: '600', color: COLORS.noir, marginLeft: 6 },
   liste: { backgroundColor: 'white', borderRadius: 12, width: '100%', overflow: 'hidden' },
   ligneListe: {
     padding: 14, borderBottomWidth: 1, borderBottomColor: '#f0f0f0',
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
   },
-  ligneTexte: { fontSize: 14, color: COLORS.noir },
-  chevron: { fontSize: 20, color: COLORS.gris },
+  ligneGauche: { flexDirection: 'row', alignItems: 'center' },
+  ligneTexte: { fontSize: 14, color: COLORS.noir, marginLeft: 12 },
   deconnexion: { color: COLORS.rouge, fontWeight: '600', fontSize: 14 },
 });
