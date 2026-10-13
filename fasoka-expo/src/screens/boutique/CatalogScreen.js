@@ -4,6 +4,7 @@ import {
   ActivityIndicator, StyleSheet, Modal,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../theme/colors';
 import { ApiClient, ApiException } from '../../api/apiClient';
 import { useSpace } from '../../context/SpaceContext';
@@ -48,22 +49,22 @@ export default function CatalogScreen({ navigation }) {
                 {item.images && item.images.length > 0 ? (
                   <Image source={{ uri: item.images[0] }} style={{ width: '100%', height: '100%' }} />
                 ) : (
-                  <Text style={{ color: COLORS.gris }}>🖼️</Text>
+                  <Ionicons name="image-outline" size={20} color={COLORS.gris} />
                 )}
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.nom}>{item.nom}</Text>
                 <Text style={styles.detail}>{Number(item.prix).toLocaleString('fr-FR')} F CFA · Stock: {item.stock_quantite}</Text>
               </View>
-              {item.stock_quantite <= 5 && <Text style={{ color: COLORS.rouge }}>⚠️</Text>}
-              <Text style={{ color: COLORS.gris, marginLeft: 6 }}>›</Text>
+              {item.stock_quantite <= 5 && <Ionicons name="warning" size={18} color={COLORS.rouge} />}
+              <Ionicons name="chevron-forward" size={18} color={COLORS.gris} style={{ marginLeft: 6 }} />
             </TouchableOpacity>
           )}
         />
       )}
 
       <TouchableOpacity style={styles.fab} onPress={() => setModalOuvert(true)}>
-        <Text style={{ fontSize: 24, color: COLORS.noir }}>+</Text>
+        <Ionicons name="add" size={28} color={COLORS.noir} />
       </TouchableOpacity>
 
       <FormulaireAjoutProduit
@@ -120,14 +121,17 @@ function FormulaireAjoutProduit({ visible, shopId, onFermer, onCree }) {
         <View style={styles.modalContenu}>
           <View style={styles.modalEntete}>
             <Text style={{ fontWeight: '700', fontSize: 16 }}>Nouveau produit</Text>
-            <TouchableOpacity onPress={onFermer}><Text style={{ fontSize: 18 }}>✕</Text></TouchableOpacity>
+            <TouchableOpacity onPress={onFermer}><Ionicons name="close" size={24} color={COLORS.noir} /></TouchableOpacity>
           </View>
 
           <TouchableOpacity style={styles.zonePhoto} onPress={choisirPhoto}>
             {photo ? (
               <Image source={{ uri: photo.uri }} style={{ width: '100%', height: '100%', borderRadius: 12 }} />
             ) : (
-              <Text style={{ color: COLORS.gris }}>📷  Ajouter une photo</Text>
+              <View style={{ alignItems: 'center' }}>
+                <Ionicons name="camera-outline" size={28} color={COLORS.gris} />
+                <Text style={{ color: COLORS.gris, marginTop: 4 }}>Ajouter une photo</Text>
+              </View>
             )}
           </TouchableOpacity>
 
