@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../theme/colors';
 import { useCart } from '../../context/CartContext';
 import { ApiClient, ApiException } from '../../api/apiClient';
@@ -52,11 +53,11 @@ export default function CartScreen() {
             </View>
             <View style={styles.quantite}>
               <TouchableOpacity style={styles.boutonQte} onPress={() => changerQuantite(item.product.id, item.qte - 1)}>
-                <Text>−</Text>
+                <Ionicons name="remove" size={16} color={COLORS.noir} />
               </TouchableOpacity>
               <Text style={{ marginHorizontal: 10 }}>{item.qte}</Text>
               <TouchableOpacity style={styles.boutonQte} onPress={() => changerQuantite(item.product.id, item.qte + 1)}>
-                <Text>+</Text>
+                <Ionicons name="add" size={16} color={COLORS.noir} />
               </TouchableOpacity>
             </View>
           </View>
