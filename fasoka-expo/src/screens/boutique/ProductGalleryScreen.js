@@ -4,6 +4,7 @@ import {
   ActivityIndicator, Alert,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../theme/colors';
 import { ApiClient, ApiException } from '../../api/apiClient';
 
@@ -34,7 +35,7 @@ export default function ProductGalleryScreen({ route }) {
 
     setEnvoiEnCours(true);
     try {
-  await ApiClient.uploadImage(`/products/${productId}/images`, resultat.assets[0]);
+      await ApiClient.uploadImage(`/products/${productId}/images`, resultat.assets[0]);
       await charger();
     } catch (e) {
       Alert.alert('Erreur', e instanceof ApiException ? e.message : 'Impossible d\'envoyer la photo.');
@@ -98,13 +99,13 @@ export default function ProductGalleryScreen({ route }) {
                 {index === 0 ? 'Photo principale' : `Photo ${index + 1}`}
               </Text>
               <TouchableOpacity disabled={index === 0} onPress={() => deplacer(index, -1)} style={styles.boutonRond}>
-                <Text style={{ opacity: index === 0 ? 0.3 : 1 }}>↑</Text>
+                <Ionicons name="arrow-up" size={16} color={COLORS.noir} style={{ opacity: index === 0 ? 0.3 : 1 }} />
               </TouchableOpacity>
               <TouchableOpacity disabled={index === images.length - 1} onPress={() => deplacer(index, 1)} style={styles.boutonRond}>
-                <Text style={{ opacity: index === images.length - 1 ? 0.3 : 1 }}>↓</Text>
+                <Ionicons name="arrow-down" size={16} color={COLORS.noir} style={{ opacity: index === images.length - 1 ? 0.3 : 1 }} />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => confirmerSuppression(item)} style={styles.boutonRond}>
-                <Text style={{ color: COLORS.rouge }}>🗑</Text>
+                <Ionicons name="trash-outline" size={16} color={COLORS.rouge} />
               </TouchableOpacity>
             </View>
           )}
@@ -112,7 +113,7 @@ export default function ProductGalleryScreen({ route }) {
       )}
 
       <TouchableOpacity style={styles.fab} onPress={ajouterPhoto} disabled={envoiEnCours}>
-        {envoiEnCours ? <ActivityIndicator color={COLORS.noir} /> : <Text style={{ fontSize: 20 }}>📷</Text>}
+        {envoiEnCours ? <ActivityIndicator color={COLORS.noir} /> : <Ionicons name="camera" size={22} color={COLORS.noir} />}
       </TouchableOpacity>
     </View>
   );
