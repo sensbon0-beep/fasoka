@@ -1,4 +1,5 @@
 import React from 'react';
+import { View, Text, Image } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { COLORS } from '../theme/colors';
 import { useCart } from '../context/CartContext';
@@ -14,6 +15,80 @@ const Tab = createBottomTabNavigator();
 // Noms de base des icônes Ionicons (l'onglet Profil affiche la photo du client, voir IconesOnglets.js)
 const ICONES = { Accueil: 'storefront', Panier: 'cart', Historique: 'receipt' };
 
+// ---------- Logo FASOKA ----------
+// Le projet ne contient pas encore de fichier logo dans un dossier assets : le logo officiel
+// (monogramme F doré + pastille rouge, fichier fasoka-logomark.svg) est donc redessiné ici avec ses
+// proportions exactes. Pour utiliser un fichier image à la place, ajouter-le dans fasoka-expo/assets/
+// (ex : logo.png) et remplacer null ci-dessous par : require('../../assets/logo.png')
+const LOGO_IMAGE = null;
+
+// Dimensions et formes du logo officiel, en unités du fichier SVG d'origine
+const LOGO_LARGEUR = 247;
+const LOGO_HAUTEUR = 237;
+const FORMES_F = [
+  { gauche: 0, haut: 15, largeur: 58, hauteur: 222, rayon: 16 }, // montant vertical
+  { gauche: 0, haut: 15, largeur: 176, hauteur: 58, rayon: 16 }, // barre du haut
+  { gauche: 0, haut: 127, largeur: 136, hauteur: 54, rayon: 15 }, // barre du milieu
+];
+const PASTILLE = { gauche: 161, haut: 0, diametre: 86, bordure: 10 }; // pastille rouge cerclée de noir
+
+function LogoFasoka({ hauteur = 30 }) {
+  if (LOGO_IMAGE) {
+    return (
+      <Image
+        source={LOGO_IMAGE}
+        style={{ height: hauteur, width: hauteur * (LOGO_LARGEUR / LOGO_HAUTEUR) }}
+        resizeMode="contain"
+      />
+    );
+  }
+
+  const u = hauteur / LOGO_HAUTEUR; // échelle : unités SVG → pixels
+  return (
+    <View style={{ width: LOGO_LARGEUR * u, height: hauteur }}>
+      {FORMES_F.map((forme, i) => (
+        <View
+          key={i}
+          style={{
+            position: 'absolute',
+            left: forme.gauche * u,
+            top: forme.haut * u,
+            width: forme.largeur * u,
+            height: forme.hauteur * u,
+            borderRadius: forme.rayon * u,
+            backgroundColor: COLORS.or,
+          }}
+        />
+      ))}
+      <View
+        style={{
+          position: 'absolute',
+          left: PASTILLE.gauche * u,
+          top: PASTILLE.haut * u,
+          width: PASTILLE.diametre * u,
+          height: PASTILLE.diametre * u,
+          borderRadius: (PASTILLE.diametre * u) / 2,
+          borderWidth: PASTILLE.bordure * u,
+          borderColor: COLORS.noir,
+          backgroundColor: COLORS.rouge,
+        }}
+      />
+    </View>
+  );
+}
+
+// Titre de la barre supérieure : logo + nom de l'application
+function TitreMarque() {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center' }} accessibilityRole="header" accessibilityLabel="FASOKA">
+      <LogoFasoka hauteur={28} />
+      <Text numberOfLines={1} style={{ color: COLORS.or, fontSize: 19, fontWeight: '900', letterSpacing: 2, marginLeft: 10 }}>
+        FASOKA
+      </Text>
+    </View>
+  );
+}
+
 export default function ClientTabs({ onSelectBoutique }) {
   const { nombreArticles } = useCart();
 
@@ -22,7 +97,8 @@ export default function ClientTabs({ onSelectBoutique }) {
       screenOptions={({ route }) => ({
         headerStyle: { backgroundColor: COLORS.noir },
         headerTintColor: COLORS.or,
-        headerTitle: 'FASOKA',
+        headerTitle: () => <TitreMarque />,
+        headerTitleAlign: 'left',
         headerRight: () => <SpaceSwitcher onSelectClient={() => {}} onSelectBoutique={onSelectBoutique} />,
         tabBarActiveTintColor: COLORS.rouge,
         tabBarInactiveTintColor: COLORS.gris,
