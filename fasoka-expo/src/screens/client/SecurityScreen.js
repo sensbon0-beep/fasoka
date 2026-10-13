@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, ScrollView,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../theme/colors';
 import { useAuth } from '../../context/AuthContext';
 import { ApiClient, ApiException } from '../../api/apiClient';
@@ -128,7 +129,8 @@ export default function SecurityScreen({ onRetour }) {
       keyboardShouldPersistTaps="handled"
     >
       <TouchableOpacity onPress={retour} style={styles.retour}>
-        <Text style={styles.retourTexte}>‹ Retour</Text>
+        <Ionicons name="chevron-back" size={18} color={COLORS.rouge} />
+        <Text style={styles.retourTexte}>Retour</Text>
       </TouchableOpacity>
       <Text style={styles.titre}>{titre}</Text>
 
@@ -136,15 +138,21 @@ export default function SecurityScreen({ onRetour }) {
         <View>
           <View style={styles.liste}>
             <TouchableOpacity style={styles.ligne} onPress={() => ouvrir('mot_de_passe')}>
-              <Text style={styles.ligneTexte}>🔑  Changer le mot de passe</Text>
-              <Text style={styles.chevron}>›</Text>
+              <View style={styles.ligneGauche}>
+                <Ionicons name="key-outline" size={20} color={COLORS.noir} />
+                <Text style={[styles.ligneTexte, { marginLeft: 12 }]}>Changer le mot de passe</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={COLORS.gris} />
             </TouchableOpacity>
             <TouchableOpacity style={[styles.ligne, { borderBottomWidth: 0 }]} onPress={() => ouvrir('email')}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.ligneTexte}>✉️  Changer l'email de connexion</Text>
-                <Text style={styles.ligneSousTexte}>{user && user.email ? user.email : 'Aucun email'}</Text>
+              <View style={[styles.ligneGauche, { flex: 1 }]}>
+                <Ionicons name="mail-outline" size={20} color={COLORS.noir} />
+                <View style={{ marginLeft: 12, flex: 1 }}>
+                  <Text style={styles.ligneTexte}>Changer l'email de connexion</Text>
+                  <Text style={styles.ligneSousTexte}>{user && user.email ? user.email : 'Aucun email'}</Text>
+                </View>
               </View>
-              <Text style={styles.chevron}>›</Text>
+              <Ionicons name="chevron-forward" size={18} color={COLORS.gris} />
             </TouchableOpacity>
           </View>
           <Text style={styles.aide}>
@@ -244,7 +252,7 @@ export default function SecurityScreen({ onRetour }) {
 
       {etape === 'succes' && (
         <View>
-          <Text style={styles.succesGrand}>✓</Text>
+          <Ionicons name="checkmark-circle" size={64} color="#16A34A" style={{ alignSelf: 'center', marginBottom: 8 }} />
           <Text style={styles.texte}>
             {type === 'mot_de_passe'
               ? 'Ton mot de passe a été modifié. Utilise-le lors de ta prochaine connexion.'
@@ -261,7 +269,7 @@ export default function SecurityScreen({ onRetour }) {
 
 const styles = StyleSheet.create({
   container: { padding: 20, width: '100%', maxWidth: 520, alignSelf: 'center' },
-  retour: { paddingVertical: 6, marginBottom: 6, alignSelf: 'flex-start' },
+  retour: { paddingVertical: 6, marginBottom: 6, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center' },
   retourTexte: { fontSize: 15, color: COLORS.rouge, fontWeight: '600' },
   titre: { fontSize: 20, fontWeight: '800', marginBottom: 16, color: COLORS.noir },
   liste: { backgroundColor: 'white', borderRadius: 12, overflow: 'hidden' },
@@ -271,7 +279,7 @@ const styles = StyleSheet.create({
   },
   ligneTexte: { fontSize: 14, color: COLORS.noir },
   ligneSousTexte: { fontSize: 12, color: COLORS.gris, marginTop: 2 },
-  chevron: { fontSize: 20, color: COLORS.gris },
+  ligneGauche: { flexDirection: 'row', alignItems: 'center' },
   label: { fontSize: 12, color: COLORS.gris, marginBottom: 4, marginTop: 10 },
   input: { backgroundColor: 'white', borderRadius: 12, padding: 14, fontSize: 14 },
   inputLectureSeule: { backgroundColor: '#ECEAE4' },
@@ -283,7 +291,6 @@ const styles = StyleSheet.create({
   texte: { fontSize: 14, color: COLORS.noir, lineHeight: 20 },
   erreur: { color: COLORS.rouge, marginTop: 14 },
   succes: { color: '#16A34A', marginTop: 12, fontWeight: '600' },
-  succesGrand: { fontSize: 48, color: '#16A34A', textAlign: 'center', marginBottom: 8 },
   bouton: { backgroundColor: COLORS.or, borderRadius: 12, padding: 14, alignItems: 'center', marginTop: 20 },
   boutonTexte: { color: COLORS.noir, fontWeight: '700', fontSize: 15 },
   lien: { color: COLORS.rouge, fontWeight: '600', fontSize: 13 },
