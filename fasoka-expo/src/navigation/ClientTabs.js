@@ -20,7 +20,7 @@ const ICONES = { Accueil: 'storefront', Panier: 'cart', Historique: 'receipt' };
 // (monogramme F doré + pastille rouge, fichier fasoka-logomark.svg) est donc redessiné ici avec ses
 // proportions exactes. Pour utiliser un fichier image à la place, ajouter-le dans fasoka-expo/assets/
 // (ex : logo.png) et remplacer null ci-dessous par : require('../../assets/logo.png')
-const LOGO_IMAGE = null;
+const LOGO_IMAGE = require('../../assets/logo.png');
 
 // Dimensions et formes du logo officiel, en unités du fichier SVG d'origine
 const LOGO_LARGEUR = 247;
