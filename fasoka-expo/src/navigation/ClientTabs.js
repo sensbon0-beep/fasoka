@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, Text, Image } from 'react-native';
+import { View, Text, Image, Pressable, Platform, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { CommonActions } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { COLORS } from '../theme/colors';
 import { useCart } from '../context/CartContext';
 import SpaceSwitcher from '../components/SpaceSwitcher';
-import { IconeOnglet, IconeProfil } from '../components/IconesOnglets';
+import { IconePastille, IconeProfil } from '../components/IconesOnglets';
 import ClientHomeScreen from '../screens/client/ClientHomeScreen';
 import CartScreen from '../screens/client/CartScreen';
 import HistoryScreen from '../screens/client/HistoryScreen';
@@ -18,6 +19,8 @@ const COULEUR_BARRE = COLORS.blanc;
 
 // Noms de base des icônes Ionicons (l'onglet Profil affiche la photo du client, voir IconesOnglets.js)
 const ICONES = { Accueil: 'storefront', Panier: 'cart', Historique: 'receipt' };
+
+const COULEUR_LIBELLE_REPOS = '#6B6B6B'; // gris foncé : lisible sur fond blanc
 
 // ---------- Logo FASOKA ----------
 // Le projet ne contient pas encore de fichier logo dans un dossier assets : le logo officiel
@@ -94,6 +97,112 @@ function TitreMarque() {
   );
 }
 
+// ---------- Barre d'onglets inférieure ----------
+// Barre personnalisée branchée sur le navigateur existant (même routes, même écrans) : elle reçoit l'état réel
+// de la navigation (`state.index`) et reproduit le comportement standard des onglets :
+// événement « tabPress » (utilisé par l'écran d'accueil), navigation vers l'écran, appui long.
+export function BarreOnglets({ state, descriptors, navigation, insets }) {
+  return (
+    <View
+      style={[
+        styles.barre,
+        {
+          paddingBottom: Math.max(insets.bottom, 6), // zone de sécurité du téléphone
+          paddingHorizontal: Math.max(insets.left, insets.right),
+        },
+      ]}
+    >
+      {state.routes.map((route, index) => {
+        const { options } = descriptors[route.key];
+        const focused = state.index === index; // l'onglet actif est celui réellement affiché
+        const libelle =
+          typeof options.tabBarLabel === 'string'
+            ? options.tabBarLabel
+            : options.title !== undefined
+              ? options.title
+              : route.name;
+        const badge = options.tabBarBadge; // compteur du panier (valeur réelle, définie dans ClientTabs)
+
+        const surAppui = () => {
+          const evenement = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+          if (!focused && !evenement.defaultPrevented) {
+            navigation.dispatch({
+              ...CommonActions.navigate({ name: route.name, merge: true }),
+              target: state.key,
+            });
+          }
+        };
+        const surAppuiLong = () => {
+          navigation.emit({ type: 'tabLongPress', target: route.key });
+        };
+
+        return (
+          <Pressable
+            key={route.key}
+            accessibilityRole={Platform.select({ ios: 'button', default: 'tab' })}
+            accessibilityState={focused ? { selected: true } : {}}
+            accessibilityLabel={
+              options.tabBarAccessibilityLabel || libelle + ', onglet ' + (index + 1) + ' sur ' + state.routes.length
+            }
+            testID={options.tabBarTestID}
+            onPress={surAppui}
+            onLongPress={surAppuiLong}
+            style={({ pressed }) => [styles.item, pressed && { opacity: 0.7 }]}
+          >
+            <View style={styles.zoneIcone}>
+              {route.name === 'Profil' ? (
+                <IconeProfil focused={focused} />
+              ) : (
+                <IconePastille nom={ICONES[route.name]} focused={focused} />
+              )}
+              {badge != null ? (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeTexte}>{typeof badge === 'number' && badge > 99 ? '99+' : badge}</Text>
+                </View>
+              ) : null}
+            </View>
+            <Text
+              numberOfLines={1}
+              style={[styles.libelle, { color: focused ? COLORS.noir : COULEUR_LIBELLE_REPOS }]}
+            >
+              {libelle}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  barre: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.blanc,
+    borderTopWidth: 1,
+    borderTopColor: '#ECE9E2',
+    paddingTop: 6,
+  },
+  item: { flex: 1, alignItems: 'center', justifyContent: 'flex-start', minHeight: 56 },
+  // Zone réservée à l'icône : elle laisse la place à l'agrandissement du cercle sans toucher le libellé
+  zoneIcone: { width: 44, height: 40, alignItems: 'center', justifyContent: 'center' },
+  libelle: { fontSize: 11, fontWeight: '600', marginTop: 1 },
+  badge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    minWidth: 16,
+    height: 16,
+    paddingHorizontal: 4,
+    borderRadius: 8,
+    backgroundColor: COLORS.rouge,
+    borderWidth: 1.5,
+    borderColor: COLORS.blanc,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeTexte: { color: 'white', fontSize: 10, fontWeight: '800', lineHeight: 12 },
+});
+
 export default function ClientTabs({ onSelectBoutique }) {
   const { nombreArticles } = useCart();
 
@@ -102,6 +211,7 @@ export default function ClientTabs({ onSelectBoutique }) {
     {/* Barre blanche : icônes de la barre d'état en sombre (retour automatique au style global en quittant l'espace client) */}
     <StatusBar style="dark" />
     <Tab.Navigator
+      tabBar={(props) => <BarreOnglets {...props} />}
       screenOptions={({ route }) => ({
         headerStyle: { backgroundColor: COULEUR_BARRE },
         headerTintColor: COLORS.noir,
@@ -110,17 +220,12 @@ export default function ClientTabs({ onSelectBoutique }) {
         headerRight: () => (
           <SpaceSwitcher couleur={COLORS.noir} onSelectClient={() => {}} onSelectBoutique={onSelectBoutique} />
         ),
-        tabBarActiveTintColor: COLORS.rouge,
-        tabBarInactiveTintColor: COLORS.gris,
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
-        tabBarBadgeStyle: { backgroundColor: COLORS.rouge, color: 'white' },
+        // Compteur du panier : valeur réelle (nombre d'articles), affichée par la barre personnalisée
         tabBarBadge: route.name === 'Panier' && nombreArticles > 0 ? nombreArticles : undefined,
-        tabBarIcon: ({ focused, color, size }) =>
-          route.name === 'Profil' ? (
-            <IconeProfil focused={focused} color={color} size={size} />
-          ) : (
-            <IconeOnglet nom={ICONES[route.name]} focused={focused} color={color} size={size} />
-          ),
+        tabBarAccessibilityLabel:
+          route.name === 'Panier' && nombreArticles > 0
+            ? 'Panier, ' + nombreArticles + (nombreArticles > 1 ? ' articles' : ' article')
+            : undefined,
       })}
     >
       <Tab.Screen name="Accueil" component={ClientHomeScreen} />
